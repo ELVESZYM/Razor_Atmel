@@ -278,11 +278,6 @@ static void UserAppSM_WaitChannelClose(void)
         bLedShow=FALSE;
         UserApp1_StateMachine = UserApp1SlaveInitialize;
       }
-      else
-      {
-        LCDCommand(LCD_CLEAR_CMD);
-        LCDMessage(LINE1_START_ADDR, "       GAME OVER"); 
-      }
     }
   }
   
@@ -530,11 +525,19 @@ static void UserAppSM_ChannelOpen(void)
     {
       LedOff(aeLedDisplayLevels[u8k]);
     }
- 
+    if(bStateflag)
+    {  
      LCDCommand(LCD_CLEAR_CMD);
      LCDMessage(LINE2_START_ADDR, au8SwitchSlaveButton); 
      LCDMessage(LINE1_START_ADDR, au8SwitchSlaveTip); 
      UserApp1_StateMachine = UserAppSM_WaitChannelClose  ;
+    }
+    else
+    {
+      LCDCommand(LCD_CLEAR_CMD);
+      LCDMessage(LINE1_START_ADDR, "       GAME OVER"); 
+    }
+
   } /* end if(WasButtonPressed(BUTTON3)) */
 }
 
@@ -560,7 +563,7 @@ static void UserAppSM_WaitChannelOpen(void)
 
 /*-------------------------------------------------------------------------------------------------------------------*/
 /* Wait for ??? */
-static void UserApp1SM_Idle(void)
+static void     UserApp1SM_Idle(void)
 {
                    
   /* Look for BUTTON 0 to open channel */
