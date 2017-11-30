@@ -88,7 +88,7 @@ Function Definitions
 static void UserApp1SM_WaitChannelAssign()
 {
  
-  if( AntRadioStatusChannel(ANT_CHANNEL_USERAPP) == ANT_CONFIGURED || AntRadioStatusChannel(ANT_CHANNEL_SLAVE) == ANT_CONFIGURED)
+  if( AntRadioStatusChannel(ANT_CHANNEL_USERAPP) == ANT_CONFIGURED)
   {
     /* Channel assignment is successful, so open channel and
     proceed to Idle state */
@@ -116,31 +116,15 @@ Promises:
   - 
 */
 
-
 //static void UserApp1SlaveInitialize(void)
 void UserApp1Initialize(void)
 {
-  LedOff(GREEN);
-  LedOff(YELLOW);
-  LedOff(BLUE);
-  LedOff(RED); 
-  LedOff(WHITE); 
-  LedOff(PURPLE); 
-  LedOff(CYAN); 
-  LedOff(ORANGE); 
-  static u8 au8WelcomeMessage[] = "Hide and go Seek";
-  static  u8 au8Instructions[] = "Start Press Button 0 ";
+  static u8 au8WelcomeMessage[] = " heart rate tester";
+  static u8 au8NetWorkKey[]={0xB9, 0xA5, 0x21, 0xFB, 0xBD, 0x72, 0xC3, 0x45};
 
-  bLcdSlaveShow=FALSE;
-  bShow=TRUE;
-  bStateflag=TRUE; 
-  bLedShow=TRUE;
   /* Clear screen and place start messages */
   LCDCommand(LCD_CLEAR_CMD);
   LCDMessage(LINE1_START_ADDR, au8WelcomeMessage); 
-  LCDMessage(LINE2_START_ADDR, au8Instructions); 
-
-  /* Start with LED0 in RED state = channel is not configured */
 
   /* Configure ANT for this application */
   sAntSetupData.AntChannel          = ANT_CHANNEL_USERAPP;
@@ -175,65 +159,7 @@ void UserApp1Initialize(void)
   }
 } /* end UserApp1Initialize() */
 
- //void UserApp1Initialize(void)
-static void UserApp1SlaveInitialize(void)
-{
-  LedOff(GREEN);
-  LedOff(YELLOW);
-  LedOff(BLUE);
-  LedOff(RED); 
-  LedOff(WHITE); 
-  LedOff(PURPLE); 
-  LedOff(CYAN); 
-  LedOff(ORANGE); 
-  PWMAudioOn(BUZZER1);
-
-  static u8 au8WelcomeMessage[] = "Hide and go Seek";
-  static u8 au8Instructions[] = "Start Press Button 0 ";
-
-  
-   bStateflag=FALSE;  
-  /* Clear screen and place start messages */
-  LCDCommand(LCD_CLEAR_CMD);
-  LCDMessage(LINE1_START_ADDR, au8WelcomeMessage); 
-  LCDMessage(LINE2_START_ADDR, au8Instructions); 
-
-  /* Start with LED0 in RED state = channel is not configured */
-
-  
- /* Configure ANT for this application */
-  sAntSlave.AntChannel          = ANT_CHANNEL_SLAVE;
-  sAntSlave.AntChannelType      = ANT_CHANNEL_TYPE_SLAVE;
-  sAntSlave.AntChannelPeriodLo  = ANT_CHANNEL_PERIOD_LO_USERAPP;
-  sAntSlave.AntChannelPeriodHi  = ANT_CHANNEL_PERIOD_HI_USERAPP;
-  
-  sAntSlave.AntDeviceIdLo       = ANT_DerEVICEID_LO_USERAPP;
-  sAntSlave.AntDeviceIdHi       = ANT_DEVICEID_HI_USERAPP;
-  sAntSlave.AntDeviceType       = ANT_DEVICE_TYPE_USERAPP;
-  sAntSlave.AntTransmissionType = ANT_TRANSMISSION_TYPE_USERAPP;
-  sAntSlave.AntFrequency        = ANT_FREQUENCY_USERAPP;
-  sAntSlave.AntTxPower          = ANT_TX_POWER_USERAPP;
-
-  sAntSlave.AntNetwork = ANT_NETWORK_DEFAULT;
-  for(u8 i = 0; i < ANT_NETWORK_NUMBER_BYTES; i++)
-  {
-    sAntSlave.AntNetworkKey[i] = ANT_DEFAULT_NETWORK_KEY;
-  }
-    
-  /* If good initialization, set state to Idle */
-  if( AntAssignChannel(&sAntSlave) )
-  {
-    /* Channel is configured, so change LED to yellow */
-    UserApp1_StateMachine = UserApp1SM_WaitChannelAssign;
-  }
-  else
-  {
-    /* The task isn't properly initialized, so shut it down and don't run */
-    LedBlink(RED, LED_4HZ);
-    UserApp1_StateMachine = UserApp1SM_Error;
-  }
-} /* end UserApp1Initialize() */
-  
+ 
 /*----------------------------------------------------------------------------------------------------------------------
 Function UserApp1RunActiveState()
 
@@ -563,26 +489,9 @@ static void UserAppSM_WaitChannelOpen(void)
 
 /*-------------------------------------------------------------------------------------------------------------------*/
 /* Wait for ??? */
-static void     UserApp1SM_Idle(void)
+static void UserApp1SM_Idle(void)
 {
-                   
-  /* Look for BUTTON 0 to open channel */
-  if(WasButtonPressed(BUTTON0))
-  {
-    /* Got the button, so complete one-time actions before next state */
-    ButtonAcknowledge(BUTTON0);
-    //LCDCommand(LCD_CLEAR_CMD);
-    /* Queue open channel and change LED0 from yellow to blinking green to indicate channel is opening */
-    if(bStateflag)
-    {
-       AntOpenChannelNumber(ANT_CHANNEL_USERAPP);
-    }
-    else
-    {
-      AntOpenChannelNumber(ANT_CHANNEL_SLAVE);
-    }
- 
-
+    AntOpenChannelNumber(ANT_CHANNEL_USERAPP);
     /* Set timer and advance states */
     UserApp_u32Timeout = G_u32SystemTime1ms;
     UserApp1_StateMachine = UserAppSM_WaitChannelOpen;
