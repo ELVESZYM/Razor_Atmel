@@ -21,22 +21,16 @@ Header file for user_app1.c
 #define __USER_APP1_H
 
 #define ANT_CHANNEL_USERAPP             ANT_CHANNEL_0  
-#define ANT_CHANNEL_SLAVE               ANT_CHANNEL_1
-#define ANT_CHANNEL_TYPE_MASTER       CHANNEL_TYPE_MASTER    
 #define ANT_CHANNEL_TYPE_SLAVE        CHANNEL_TYPE_SLAVE   
 #define ANT_DerEVICEID_LO_USERAPP       (u8)0x6A               
 #define ANT_DEVICEID_HI_USERAPP         (u8)0x01       
-#define ANT_DEVICE_TYPE_USERAPP         (u8)1      
+#define ANT_DEVICE_TYPE_USERAPP         (u8)120         
 #define ANT_TRANSMISSION_TYPE_USERAPP   (u8)1           
-#define ANT_CHANNEL_PERIOD_LO_USERAPP   (u8)0x00       
-#define ANT_CHANNEL_PERIOD_HI_USERAPP   (u8)0x20      
-#define ANT_FREQUENCY_USERAPP           (u8)50           
+#define ANT_CHANNEL_PERIOD_LO_USERAPP   (u8)0x86              
+#define ANT_CHANNEL_PERIOD_HI_USERAPP   (u8)0x1F        
+#define ANT_FREQUENCY_USERAPP           (u8)57           
 #define ANT_TX_POWER_USERAPP            RADIO_TX_POWER_4DBM 
-#define TIMEOUT_VALUE                    (u8)3000
-#define NUMBER_ASCII_TO_DEC                  48
-#define LEVE_NUBER                        (u8)8
-#define LED_NUMBER                           8
-#define  s8WeakRssi                          -99
+#define TIMEOUT_VALUE                   1000
 /**********************************************************************************************************************
 Type Definitions
 **********************************************************************************************************************/
