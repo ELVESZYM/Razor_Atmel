@@ -1047,9 +1047,7 @@ Default start-up IO values are held here.
     04 [0] PA_04_HSMCI_MCCDA N/A
 
     03 [0] PA_03_HSMCI_MCCK N/A
-    02 [0] PA_02_SD_DETECT N/A
-    01 [0] PA_01_SD_WP N/A
-    00 [0] PA_00_TP54 N/A
+9
 */
 
 #define PIOB_SODR_INIT (u32)0x01BFFE00

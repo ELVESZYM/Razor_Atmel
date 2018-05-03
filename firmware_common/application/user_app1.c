@@ -61,6 +61,20 @@ static fnCode_type UserApp1_StateMachine;            /* The state machine functi
 //static u32 UserApp1_u32Timeout;                      /* Timeout counter used across states */
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /**********************************************************************************************************************
 Function Definitions
 **********************************************************************************************************************/
@@ -87,7 +101,34 @@ Promises:
 */
 void UserApp1Initialize(void)
 {
- 
+  /*************************************************************/  
+ //初始化PA0-PA6口，设为输出口
+  AT91C_BASE_PIOA->PIO_PER    |= 0x7F; 
+  AT91C_BASE_PIOA->PIO_PDR    &= 0xFFFFFF80;
+  
+  AT91C_BASE_PIOA->PIO_OER    |= 0x7F;
+  AT91C_BASE_PIOA->PIO_ODR    &= 0xFFFFFF80;
+  
+  AT91C_BASE_PIOA->PIO_IFER   = PIOA_IFER_INIT;
+  AT91C_BASE_PIOA->PIO_IFDR   = PIOA_IFDR_INIT;
+  
+  AT91C_BASE_PIOA->PIO_SODR   = PIOA_SODR_INIT;
+  AT91C_BASE_PIOA->PIO_CODR   = PIOA_CODR_INIT;
+  
+  AT91C_BASE_PIOA->PIO_MDER   = PIOA_MDER_INIT;
+  AT91C_BASE_PIOA->PIO_MDDR   = PIOA_MDDR_INIT;
+  
+  AT91C_BASE_PIOA->PIO_PPUDR  = PIOA_PPUDR_INIT;
+  AT91C_BASE_PIOA->PIO_PPUER  = PIOA_PPUER_INIT;
+  
+  AT91C_BASE_PIOA->PIO_ABSR   = PIOA_ABSR_INIT;
+  AT91C_BASE_PIOA->PIO_SCIFSR = PIOA_SCIFSR_INIT;
+  
+  AT91C_BASE_PIOA->PIO_DIFSR  = PIOA_DIFSR_INIT;
+  AT91C_BASE_PIOA->PIO_SCDR   = PIOA_SCDR_INIT;
+  
+  AT91C_BASE_PIOA->PIO_OWER   |= 0x7F;
+  AT91C_BASE_PIOA->PIO_OWDR   &= 0xFFFFFF80;
   /* If good initialization, set state to Idle */
   if( 1 )
   {
@@ -131,12 +172,143 @@ void UserApp1RunActiveState(void)
 /**********************************************************************************************************************
 State Machine Function Definitions
 **********************************************************************************************************************/
+static void Delay(u8 u8Time)
+ {
+   static u8 u8TimeCount=0;
+   u8TimeCount++;
+   if(u8TimeCount == u8Time )
+   {
+     u8TimeCount=0;
+     return;
+   }
+ }
 
+static void SendCharMSB(u8 u8Data_)
+{
+  
+  u8 u8flag;						//数据标志位
+ u32 u8length;					//数据长度
+  u8 u8test_temp = 0;
+  u8test_temp = u8Data_;
+  for(u8length = 0; u8length < 29000; u8length++)	      //发送一个8位数据
+  {
+   										//时钟线拉低
+     CLR_LED_CLK();
+    u8flag = u8test_temp & 0x80;	//判断数据最高位状态
+    if(u8flag == 0)							
+    {
+      CLR_LED_DRI();									//当最高位为0时，将数据输出口拉低
+    }
+    else
+    {
+      SET_LED_DRI();									//当最高位为0时，将数据输出口拉低
+    }
+
+    SET_LED_CLK();				//时钟线拉高
+ 
+    u8test_temp <<= 1;			//将数据左移1位
+  }
+
+}
+
+//水平显示
+static void LEDDispMoveHorizontal(void)
+{
+  static u8 u8Data ;
+  static u8 u8select = 0;
+  static u8 u8j=0;
+  static u8 u8Send_flag = 1;
+  static u8 u8AarryData[]={0x10,0x80,0x00,0x00,0x00,0x00,0x00,0x10,0x80,0x00,0x00,0x00,0x00,0x00,
+                          0x10,0x80,0x00,0x00,0x00,0x00,0x00,0x10,0x80,0x00,0x00,0x00,0x00,0x00,
+                          0x10,0x80,0x00,0x00,0x00,0x00,0x00,0x10,0x80,0x00,0x00,0x00,0x00,0x00,
+                          0x10,0x80,0x00,0x00,0x00,0x00,0x00,0x10,0x80,0x00,0x00,0x00,0x00,0x00,
+                          0x10,0x80,0x00,0x00,0x00,0x00,0x00,0x10,0x80,0x00,0x00,0x00,0x00,0x00,
+                          0x10,0x80,0x00,0x00,0x00,0x00,0x00,0x10,0x80,0x00,0x00,0x00,0x00,0x00,
+                          0x10,0x80,0x00,0x00,0x00,0x00,0x00,0x10,0x80,0x00,0x00,0x00,0x00,0x00,
+                          0x10,0x80,0x00,0x00,0x00,0x00,0x00,0x10,0x80,0x00,0x00,0x00,0x00,0x00,
+                          0x10,0x80,0x00,0x00,0x00,0x00,0x00,0x10,0x80,0x00,0x00,0x00,0x00,0x00,
+                          0x10,0x80,0x00,0x00,0x00,0x00,0x00,0x10,0x80,0x00,0x00,0x00,0x00,0x00,
+                          0x10,0x80,0x00,0x00,0x00,0x00,0x00,0x10,0x80,0x00,0x00,0x00,0x00,0x00,
+                          0x10,0x80,0x00,0x00,0x00,0x00,0x00,0x10,0x80,0x00,0x00,0x00,0x00,0x00,
+                          0x10,0x80,0x00,0x00,0x00,0x00,0x00,0x10,0x80,0x00,0x00,0x00,0x00,0x00,
+                          0x10,0x80,0x00,0x00,0x00,0x00,0x00,0x10,0x80,0x00,0x00,0x00,0x00,0x00,
+                          0x10,0x80,0x00,0x00,0x00,0x00,0x00,0x10,0x80,0x00,0x00,0x00,0x00,0x00,
+                          0x10,0x80,0x00,0x00,0x00,0x00,0x00,0x10,0x80,0x00,0x00,0x00,0x00,0x00};
+    u8Data=u8AarryData[u8j];
+
+    u8j++;
+    if(u8j >= 228)
+    {
+      u8j=0;
+    }
+  
+    CLR_LED_CS1();
+   //Select(u8select);
+ 
+  
+    switch(u8select)		//1--8行的输入情况选择
+    {
+      
+      case 0:	{ PA2_CODR();
+                  PA0_CODR();
+                  PA1_CODR();
+                 }break;
+        case 1:	{ PA2_CODR();
+                  PA1_CODR();  
+                  PA0_SODR();
+                 }break;
+        case 2:	{ PA2_CODR();
+                  PA1_SODR();
+                  PA0_CODR();
+                 }break;
+        case 3:	{ PA2_CODR();
+                  PA1_SODR();
+                  PA0_SODR();
+                 }break;
+        case 4:	{ PA2_SODR();
+                  PA1_CODR();
+                  PA0_CODR();
+                 }break;
+        case 5:	{ PA2_SODR();
+                  PA1_CODR(); 
+                  PA0_SODR();
+                 }break;
+        case 6:	{ PA2_SODR();
+                  PA1_SODR();
+                  PA0_CODR();
+                 }break;
+
+        case 7:	{ PA2_SODR();
+                  PA1_SODR();
+                  PA0_SODR(); 
+                }break;
+    }
+
+    
+    u8select++;					//循环选择
+    if(u8select >= 8)		
+    {
+      u8select = 0;
+    }   
+
+    CLR_LED_LAT();     
+    SendCharMSB(u8Data);
+    SET_LED_LAT();
+
+  /*   
+    SET_LED_LAT();
+    Delay(5);
+    CLR_LED_LAT();
+   */
+
+
+} 
 /*-------------------------------------------------------------------------------------------------------------------*/
 /* Wait for ??? */
 static void UserApp1SM_Idle(void)
 {
 
+  UserApp1_StateMachine=LEDDispMoveHorizontal;
 } /* end UserApp1SM_Idle() */
     
 
