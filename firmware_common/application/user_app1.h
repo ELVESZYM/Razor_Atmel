@@ -56,11 +56,51 @@ Type Definitions
 
 #define P1_SIGN_DATA_LINES_OFFSET  0
 
+#define SMISO_PA13() (AT91C_BASE_PIOA->PIO_SODR |= 0x2000)
+#define SMOSI_PA14() (AT91C_BASE_PIOA->PIO_SODR |= 0x4000)
+#define SSCK_PA15()  (AT91C_BASE_PIOA->PIO_SODR |= 0x8000)
+#define SCS_PA16()   (AT91C_BASE_PIOA->PIO_SODR |= 0x10000)
+
+#define CMISO_PA13() (AT91C_BASE_PIOA->PIO_CODR |= 0x2000)
+#define CMOSI_PA14() (AT91C_BASE_PIOA->PIO_CODR |= 0x4000)
+#define CSCK_PA15()  (AT91C_BASE_PIOA->PIO_CODR |= 0x8000)
+#define CCS_PA16()   (AT91C_BASE_PIOA->PIO_CODR |= 0x10000)
+
+ 
+//#define IO_STATE     (AT91C_BASE_PIOA->PIO_PDSR &=0xffffffff)
+
+////////////////////////////////////
+
+#define IO_STATE     (AT91C_BASE_PIOA->PIO_PDSR)
+
+////////////////////////////////////
 
 /**********************************************************************************************************************
 Constants / Definitions
 **********************************************************************************************************************/
+#define ASC0808D2HZ_ADDR ( 0x66c0  ) 		//7*8 ascii code
+#define ASC0812M2ZF_ADDR ( 0x66d40 )   		//6*12 ascii code
+#define GBEX0816ZF_ADDR   243648   	   		//8*16 ascii code
+#define ZF1112B2ZF_ADDR  ( 0x3cf80 )	   	//12*12 12点字符 
+#define HZ1112B2HZ_ADDR  ( 0x3cf80+376*24 )	//12*12 12点汉字 
+#define CUTS1516ZF_ADDR  0x00  				//16*16 16点字符 
+#define JFLS1516HZ_ADDR  27072  			//16*16 16点汉字 
 
+//---------------------------------------------
+// 保留 
+//--------------------------------------------
+#define ASCII0507ZF_ADDR        245696
+#define ARIAL_16B0_ADDR         246464
+#define ARIAL_12B0_ADDR         422720
+#define SPAC1616_ADDR           425264
+#define GB2311ToUnicode_addr    (12032)
+#define UnicodeToGB2311_addr    (425328)
+//------------------------------------------------
+// 要显示的汉字的类型 
+//------------------------------------------------
+#define   TYPE_8  	0 //8  点字符 
+#define   TYPE_12  	1 //12 点汉字字符 
+#define   TYPE_16  	2 //16 点汉字字符 
 
 /**********************************************************************************************************************
 Function Declarations
