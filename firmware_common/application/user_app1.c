@@ -61,7 +61,7 @@ static fnCode_type UserApp1_StateMachine;            /* The state machine functi
 //static u32 UserApp1_u32Timeout;                      /* Timeout counter used across states */
 
  static u8 u8select = 0;
- static u8 u8UserInput[2] = { 0xd4,0xc6}; //16点汉字 “啊”  的GB2312内码。 
+ static u8 u8UserInput[2] = {0xd5,0xd4}; //16点汉字 “啊”  的GB2312内码。 
 
 
 
@@ -104,13 +104,15 @@ void UserApp1Initialize(void)
  //初始化PA0-PA6口，设为输出口
  // AT91C_BASE_PIOA->PIO_PER    |= 0x7F; //点阵口配置
  // AT91C_BASE_PIOA->PIO_PDR    &= 0xFFFFFF80;//点阵口配置
+  
   AT91C_BASE_PIOA->PIO_PER    |= 0x1E07F;//点阵口配置和字库io口配置
   AT91C_BASE_PIOA->PIO_PDR    &= 0xFFFE1F80;//点阵口配置和字库io口配置
-  AT91C_BASE_PIOA->PIO_OER    |= 0x1E07F;
-  AT91C_BASE_PIOA->PIO_ODR    &= 0xFFFE1F80;
   
-  AT91C_BASE_PIOA->PIO_IFER   = PIOA_IFER_INIT;
-  AT91C_BASE_PIOA->PIO_IFDR   = PIOA_IFDR_INIT;
+  AT91C_BASE_PIOA->PIO_OER    |= 0x1C07F;
+  AT91C_BASE_PIOA->PIO_ODR    &= 0xFFFE3F80;
+  
+  AT91C_BASE_PIOA->PIO_IFER   |= 0x2000;
+  AT91C_BASE_PIOA->PIO_IFDR   &= 0xFFFFDFFF;
   
   AT91C_BASE_PIOA->PIO_SODR   = PIOA_SODR_INIT;
   AT91C_BASE_PIOA->PIO_CODR   = PIOA_CODR_INIT;
@@ -122,13 +124,15 @@ void UserApp1Initialize(void)
   AT91C_BASE_PIOA->PIO_PPUER  = PIOA_PPUER_INIT;
   
   AT91C_BASE_PIOA->PIO_ABSR   = PIOA_ABSR_INIT;
-  AT91C_BASE_PIOA->PIO_SCIFSR = PIOA_SCIFSR_INIT;
   
+  AT91C_BASE_PIOA->PIO_SCIFSR = PIOA_SCIFSR_INIT;
   AT91C_BASE_PIOA->PIO_DIFSR  = PIOA_DIFSR_INIT;
+  
   AT91C_BASE_PIOA->PIO_SCDR   = PIOA_SCDR_INIT;
   
-  AT91C_BASE_PIOA->PIO_OWER   |= 0x1E07F;
-  AT91C_BASE_PIOA->PIO_OWDR   &= 0xFFFE1F80;
+  AT91C_BASE_PIOA->PIO_OWER   |= 0x1C07F;
+  AT91C_BASE_PIOA->PIO_OWDR   &= 0xFFFE3F80;
+  
   /* If good initialization, set state to Idle */
   if( 1 )
   {
@@ -295,24 +299,26 @@ static void LEDDispMoveHorizontal(void)
     CLR_LED_LAT();
   */
 
-//从芯片中addr地址读一个BYTE的数据 
-static u8 readbyte(u16 u16addr)  //read one byte from GT ROM
+static u8 readbyte(u32 u32addr)  //read one byte from GT ROM
  { 
   u8 u8i,u8RT_data=0x03;//赵：RT是Instruction-read方式 
+  u8 u8Printf_screen=0;
   static u8 u8Instruction_flag;
-  static u16 u16Adress_flag;
+  static u32 u32Adress_flag;
   static u32 u32IOLevel;
-  static u16 u16Doorplate_addr;
+  static u32 u32Doorplate_addr;
   
-  CCS_PA16();
-  CMOSI_PA14();                          //赵：??? 
   
+  //CMOSI_PA14();                          //赵：??? 
+
   for(u8i=0;u8i<8;u8i++)	  //先写入0x03；//赵：发送1个字节的命令-read（03）-fast read（0B） 
   {
-    CSCK_PA15();
-
-    u8Instruction_flag=u8RT_data&0x80;
-      
+    u8Instruction_flag = u8RT_data & 0x80;
+    
+    for(u8 u8q=0;u8q<100;u8q++);
+     
+    CSCK_PA15();  
+  
     if(u8Instruction_flag == 0)
     {
       CMOSI_PA14();
@@ -321,18 +327,25 @@ static u8 readbyte(u16 u16addr)  //read one byte from GT ROM
     {
       SMOSI_PA14();
     }
-   SSCK_PA15();
+    for(u8 u8q=0;u8q<100;u8q++);
    
-   u8RT_data<<=1;
+    SSCK_PA15();
+    u8RT_data<<=1;    
+
   }
   
-  u16Doorplate_addr=u16addr;
+  u32Doorplate_addr=u32addr;
+  
   for(u8i=0;u8i<24;u8i++)	   //再写三个字节地址 
   {
-    CSCK_PA15();
-    u16Adress_flag=u16Doorplate_addr & 0x8000;
     
-    if(u16Adress_flag == 0)
+    u32Adress_flag = u32Doorplate_addr & 0x800000;
+    
+    for(u8 u8q=0;u8q<100;u8q++);
+     
+    CSCK_PA15();
+     
+    if(u32Adress_flag == 0)
     {
       CMOSI_PA14();
     }
@@ -340,31 +353,39 @@ static u8 readbyte(u16 u16addr)  //read one byte from GT ROM
     {
       SMOSI_PA14();
     }
+    for(u8 u8q=0;u8q<100;u8q++);
+    
     SSCK_PA15();
-    u16Doorplate_addr<<=1;
+    
+    u32Doorplate_addr<<=1;
+    
+    
   }
-  
-   u8RT_data=0;
+ 
+   u8Printf_screen=0;
   
   for(u8i=0;u8i<8;u8i++)//读一个字节 
   {
-     SSCK_PA15();
+    u32IOLevel = IO_STATE;
+    
+    SSCK_PA15();
+      
+    if((u32IOLevel & 0x2000) != 0)
+    {
+     u8Printf_screen|=0x01;
+    }
 
-     u32IOLevel = IO_STATE;
-     
-     if((u32IOLevel & 0x2000) != 0)
-     {
-       u8RT_data|=0x01;
-     }
-     
-     CSCK_PA15();
-     
-     u8RT_data<<=1;
+    CSCK_PA15();
+   
+    u8Printf_screen<<=1;  
+
   }
-  SCS_PA16();
-  return (u8RT_data);
- }
+   
+  return (u8Printf_screen);
 
+  
+
+ }
 
 //**************汉字在芯片中的点阵数据起始地址  ****************************
 static u32  GB2312_Addr(u8 *u8internal_code,u8 u8type)
@@ -438,27 +459,32 @@ return u32temp;
 static void font_character(void)
 {
   static u8 u8_dot[32];			  //存储汉字 “啊”  的点阵数据。 
+  static u32 u32delay = 0;
 
-  static u8 u8_counter_;
-  static u16 u16_dot_address;
+  static u32 u32_dot_address;
+  static u8 u8_yun[]={0x00,0x00,0x3F,0xF8,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0xFF,0xFE,0x02,0x00,
+                       0x04,0x00,0x04,0x00,0x08,0x40,0x10,0x20,0x20,0x10,0x7F,0xF8,0x20,0x08,0x00,0x08};
+  u8 u8_counter_;
 
-
-  u16_dot_address = GB2312_Addr(u8UserInput,TYPE_16); //得到“啊” 点阵数据的起始地址 
+ u32_dot_address = GB2312_Addr(u8UserInput,TYPE_16); //得到“啊” 点阵数据的起始地址 
 
   for( u8_counter_ = 0; u8_counter_ < 32; u8_counter_++ )   //得到“啊” 点阵数据 
   {
-    u8_dot[u8_counter_] = readbyte(u16_dot_address+u8_counter_);
+    CCS_PA16();
+    u8_dot[u8_counter_] = readbyte(u32_dot_address+u8_counter_);
+    SCS_PA16();
   }
-   	
+
 }
+
 
 
 /* Wait for ??? */
 static void UserApp1SM_Idle(void)
 {  
 
- //UserApp1_StateMachine = font_character;
-UserApp1_StateMachine=LEDDispMoveHorizontal;
+ UserApp1_StateMachine = font_character;
+//UserApp1_StateMachine=LEDDispMoveHorizontal;
 } /* end UserApp1SM_Idle() */
     
 
