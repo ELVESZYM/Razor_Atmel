@@ -61,9 +61,11 @@ static fnCode_type UserApp1_StateMachine;            /* The state machine functi
 //static u32 UserApp1_u32Timeout;                      /* Timeout counter used across states */
 
  static u8 u8select = 0;
- static u8 u8UserInput[2] = {0xd5,0xd4}; //16点汉字 “啊”  的GB2312内码。 
+ //static u8 u8UserInput[6] = {0xb1,0xcf,0xd2,0xb5,0xc1,0xcb}; //16点汉字 “啊”  的GB2312内码。 
+ static u8 u8UserInput[6] = {0xd5,0xd4,0xd4,0xc6,0xc2,0xfb};
+ static u8 u8_dot[3][32];			  //存储汉字 “啊”  的点阵数据。 
 
-
+  u8 u8_counter_,u8showcount=0;
 
 
 
@@ -171,11 +173,7 @@ void UserApp1RunActiveState(void)
 /*--------------------------------------------------------------------------------------------------------------------*/
 /* Private functions                                                                                                  */
 /*--------------------------------------------------------------------------------------------------------------------*/
-
-
-/**********************************************************************************************************************
-State Machine Function Definitions
-**********************************************************************************************************************/
+/*
 static void Delay(u8 u8Time)
  {
    static u8 u8TimeCount=0;
@@ -186,9 +184,11 @@ static void Delay(u8 u8Time)
      return;
    }
  }
-
+*/
 static void SendCharMSB(u8 u8Data_)
 {
+ 
+ //  CLR_LED_LAT();
   
   u8 u8flag;						//数据标志位
   u32 u8length;					//数据长度
@@ -196,11 +196,8 @@ static void SendCharMSB(u8 u8Data_)
   u8test_temp = u8Data_;
   for(u8length = 0; u8length < 8; u8length++)	      //发送一个8位数据
   {
- 
 
-    
-    //时钟线拉低
-    CLR_LED_CLK();
+    CLR_LED_CLK(); //时钟线拉低
     u8flag = u8test_temp & 0x80;	//判断数据最高位状态
     if(u8flag == 0)							
     {
@@ -215,7 +212,7 @@ static void SendCharMSB(u8 u8Data_)
     u8test_temp <<= 1;			//将数据左移1位
   
   }
- 
+//   SET_LED_LAT();
   
 }
 
@@ -223,81 +220,76 @@ static void SendCharMSB(u8 u8Data_)
 static void LEDDispMoveHorizontal(void)
 {
   static u8 u8Data;
-  static u8 u8j=0;
-  u8 u8k=0;
-  static u8 u8Send_flag = 1;
-  static u8 u8AarryData[112]={0x3C,0x40,0x01,0x01};
-  static u16 u16Count=0;
-   
-  SET_LED_CS1();
-        	
-  if(u8select >= 8)		
+  static u8 u8y=0;
+  static u8 u8select=0;
+
+  for(u8 u8i=0;u8i<15;u8i=u8i+2)
   {
-     u8select = 0;
-  } 
-  switch(u8select)		//1--8行的输入情况选择
-  {
-    case 0:   { PA2_CODR();                 
-                PA1_CODR();
-                PA0_CODR();
-               }break;
-    case 1:   { PA2_CODR();
-                PA1_CODR();  
-                PA0_SODR();
-               }break;
-    case 2:   { PA2_CODR();
-                PA1_SODR();
-                PA0_CODR();
-               }break;
-    case 3:	{ PA2_CODR();
-                PA1_SODR();
-                PA0_SODR();
-               }break;
-    case 4:   { PA2_SODR();
-                PA1_CODR();
-                PA0_CODR();
-               }break;
-    case 5:   { PA2_SODR();
-                PA1_CODR(); 
-                PA0_SODR();
-               }break;
-    case 6:   { PA2_SODR();
-                PA1_SODR();
-                PA0_CODR();
-               }break;
-    case 7:   { PA2_SODR();
-                PA1_SODR();
-                PA0_SODR(); 
-              }break;
-   }
-   u8select++;//行循环选择
-  CLR_LED_LAT();  
- 
-  for(;u8j<112;u8k++)
-  { 
- /*  if((u8k-1)%7 == 0 ||u8k == 0)
-    {
-     
+
+    SendCharMSB(0x00);
+    SendCharMSB(0x00);
+    for(u8 u8j=0;u8j<3;u8j++)
+    {  
+      SendCharMSB(u8_dot[u8j][u8i+16]);      
+      SendCharMSB(u8_dot[u8j][u8i]);
+      SendCharMSB(u8_dot[u8j][u8i+17]);
+     SendCharMSB(u8_dot[u8j][u8i+1]); 
     }
- */
-     u8Data=u8AarryData[u8j]; 
-     SendCharMSB(u8Data);
-     u8j++;
-     if(u8j == 112)//发满一个屏需要112个字节，14个8位bit数据
-     {
-      u8j=0;
-     }
-  }
-  SET_LED_LAT();
- 
-  }
- 
- 
-  /*   
-    SET_LED_LAT();
-    Delay(5);
+    
+    
+    switch(u8i/2)		//1--8行的输入情况选择
+    {  
+      case 0:   { PA2_CODR();                 
+                  PA1_CODR();
+                  PA0_CODR();
+                 }break;
+      case 1:   { PA2_CODR();
+                  PA1_CODR();  
+                  PA0_SODR();
+                 }break;
+      case 2:   { PA2_CODR();
+                  PA1_SODR();
+                  PA0_CODR();
+                 }break;
+      case 3:	{ PA2_CODR();
+                  PA1_SODR();
+                  PA0_SODR();
+                 }break;
+      case 4:   { PA2_SODR();
+                  PA1_CODR();
+                  PA0_CODR();
+                 }break;
+      case 5:   { PA2_SODR();
+                  PA1_CODR(); 
+                  PA0_SODR();
+                 }break;
+      case 6:   { PA2_SODR();
+                  PA1_SODR();
+                  PA0_CODR();
+                 }break;
+      case 7:   { PA2_SODR();
+                  PA1_SODR();
+                  PA0_SODR(); 
+                 }break;
+    }
     CLR_LED_LAT();
-  */
+    SET_LED_LAT();
+    SET_LED_CS1();   
+    for(u8 u8k=0;u8k<200;u8k++);
+    for(u8 u8k=0;u8k<200;u8k++);
+    CLR_LED_CS1();
+    
+  }
+
+}
+ 
+
+
+
+/**********************************************************************************************************************
+State Machine Function Definitions
+**********************************************************************************************************************/
+
 
 static u8 readbyte(u32 u32addr)  //read one byte from GT ROM
  { 
@@ -414,8 +406,19 @@ static u32  GB2312_Addr(u8 *u8internal_code,u8 u8type)
   }
   else               //chinese tab zone
   {
-    u8MSB=u8internal_code[0];
-    u8LSB=u8internal_code[1];
+    switch (u8showcount)
+    {
+    case 0: u8MSB=u8internal_code[0];
+             u8LSB=u8internal_code[1];
+             break;
+    case 1: u8MSB=u8internal_code[2];
+             u8LSB=u8internal_code[3];
+             break;
+    case 2: u8MSB=u8internal_code[4];
+             u8LSB=u8internal_code[5];
+             break;
+    }
+   
     //符号区,全角 
     if(u8MSB>=0xA1 && u8MSB <= 0xAB && u8LSB>=0xa1)
     {
@@ -458,23 +461,23 @@ return u32temp;
 /*-------------------------------------------------------------------------------------------------------------------*/
 static void font_character(void)
 {
-  static u8 u8_dot[32];			  //存储汉字 “啊”  的点阵数据。 
-  static u32 u32delay = 0;
-
   static u32 u32_dot_address;
-  static u8 u8_yun[]={0x00,0x00,0x3F,0xF8,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0xFF,0xFE,0x02,0x00,
-                       0x04,0x00,0x04,0x00,0x08,0x40,0x10,0x20,0x20,0x10,0x7F,0xF8,0x20,0x08,0x00,0x08};
-  u8 u8_counter_;
 
  u32_dot_address = GB2312_Addr(u8UserInput,TYPE_16); //得到“啊” 点阵数据的起始地址 
 
   for( u8_counter_ = 0; u8_counter_ < 32; u8_counter_++ )   //得到“啊” 点阵数据 
   {
     CCS_PA16();
-    u8_dot[u8_counter_] = readbyte(u32_dot_address+u8_counter_);
+    u8_dot[u8showcount][u8_counter_] = readbyte(u32_dot_address+u8_counter_);
     SCS_PA16();
   }
+  u8showcount++;
+  if(u8showcount == 3)
+  {
+    u8showcount=0;
+    UserApp1_StateMachine=LEDDispMoveHorizontal;
 
+  }
 }
 
 
@@ -484,7 +487,6 @@ static void UserApp1SM_Idle(void)
 {  
 
  UserApp1_StateMachine = font_character;
-//UserApp1_StateMachine=LEDDispMoveHorizontal;
 } /* end UserApp1SM_Idle() */
     
 
