@@ -74,10 +74,10 @@ Function Definitions
 **********************************************************************************************************************/
   static u8 u8select = 0;
   static u8 u8UserInput[8]; //16点汉字 “啊”  的GB2312内码。 
-  static u8 u8_dot[3][32];			  //存储汉字 “啊”  的点阵数据。 
+  u8 u8_dot[3][32];			  //存储汉字 “啊”  的点阵数据。 
 
   u8 u8_counter_,u8showcount=0;
-
+  static bool bReceiveFlag=FALSE;
 
 
 /*--------------------------------------------------------------------------------------------------------------------*/
@@ -100,118 +100,6 @@ static void Delay(u8 u8Time)
    }
  }
 */
-static void SendCharMSB(u8 u8Data_)
-{
- 
- //  CLR_LED_LAT();
-  
-  u8 u8flag;						//数据标志位
-  u32 u8length;					//数据长度
-  u8 u8test_temp = 0;
-  u8test_temp = u8Data_;
-  for(u8length = 0; u8length < 8; u8length++)	      //发送一个8位数据
-  {
-
-    CLR_LED_CLK(); //时钟线拉低
-    u8flag = u8test_temp & 0x80;	//判断数据最高位状态
-    if(u8flag == 0)							
-    {
-      CLR_LED_DRI();									//当最高位为0时，将数据输出口拉低
-    }
-    else
-    {
-      SET_LED_DRI();									//当最高位为0时，将数据输出口拉低
-    }
-
-    SET_LED_CLK();				//时钟线拉高
-    u8test_temp <<= 1;			//将数据左移1位
-  
-  }
-//   SET_LED_LAT();
-  
-}
-
-//水平显示
-static void LEDDispMoveHorizontal(void)
-{
-  static u8 u8Data;
-  static u8 u8y=0;
-  static u8 u8select=0;
-  static u16 u16Counter=0;
-  u16Counter++;
-  
-  CLR_LED_LAT();
-  
-  for(u8 u8i=0;u8i<15;u8i=u8i+2)
-  {
-
-    SendCharMSB(0x00);
-    SendCharMSB(0x00);
-    for(u8 u8j=0;u8j<3;u8j++)
-    {  
-      SendCharMSB(u8_dot[u8j][u8i+16]);      
-      SendCharMSB(u8_dot[u8j][u8i]);
-      SendCharMSB(u8_dot[u8j][u8i+17]);
-      SendCharMSB(u8_dot[u8j][u8i+1]); 
-    }
-    
-    
-    switch(u8i/2)		//1--8行的输入情况选择
-    {  
-      case 0:   { PA2_CODR();                 
-                  PA1_CODR();
-                  PA0_CODR();
-                 }break;
-      case 1:   { PA2_CODR();
-                  PA1_CODR();  
-                  PA0_SODR();
-                 }break;
-      case 2:   { PA2_CODR();
-                  PA1_SODR();
-                  PA0_CODR();
-                 }break;
-      case 3:	{ PA2_CODR();
-                  PA1_SODR();
-                  PA0_SODR();
-                 }break;
-      case 4:   { PA2_SODR();
-                  PA1_CODR();
-                  PA0_CODR();
-                 }break;
-      case 5:   { PA2_SODR();
-                  PA1_CODR(); 
-                  PA0_SODR();
-                 }break;
-      case 6:   { PA2_SODR();
-                  PA1_SODR();
-                  PA0_CODR();
-                 }break;
-      case 7:   { PA2_SODR();
-                  PA1_SODR();
-                  PA0_SODR(); 
-                 }break;
-    default: break;
-    }
-   // CLR_LED_LAT();
-    SET_LED_LAT();
-    SET_LED_CS1();   
-    for(u8 u8k=0;u8k<200;u8k++);
-    for(u8 u8k=0;u8k<200;u8k++);
-    CLR_LED_CS1();
-    
-  }
-  
-  if(u16Counter == 1000)
-  {
-    u16Counter=0;
-    UserApp1_StateMachine=UserApp1SM_Idle;
-    CLR_LED_LAT();
-
-  }
-
-
-}
- 
 
 
 
@@ -284,23 +172,33 @@ static u8 readbyte(u32 u32addr)  //read one byte from GT ROM
   }
  
    u8Printf_screen=0;
+  CSCK_PA15();
   
   for(u8i=0;u8i<8;u8i++)//读一个字节 
   {
     u32IOLevel = IO_STATE;
     
-    SSCK_PA15();
+    u8Printf_screen<<=1;  
+     
+    
+    for(u8 u8q=0;u8q<100;u8q++);
       
+    
+    SSCK_PA15();
+    
+    for(u8 u8q=0;u8q<100;u8q++);
+     CSCK_PA15();
+    
     if((u32IOLevel & 0x2000) != 0)
     {
      u8Printf_screen|=0x01;
     }
-
-    CSCK_PA15();
    
-    u8Printf_screen<<=1;  
+    
 
   }
+ // SSCK_PA15();
+  
    
   return (u8Printf_screen);
 
@@ -402,11 +300,11 @@ static void font_character(void)
     u8_dot[u8showcount][u8_counter_] = readbyte(u32_dot_address+u8_counter_);
     SCS_PA16();
   }
-  u8showcount++;
+    u8showcount++;
   if(u8showcount == 3)
   {
     u8showcount=0;
-    UserApp1_StateMachine=LEDDispMoveHorizontal;
+    UserApp1_StateMachine=UserApp1SM_Idle;
 
   }
 }
@@ -570,9 +468,9 @@ static void UserApp1SM_Idle(void)
   u8 au8DataContent[] = "xxxxxxxxxxxxxxxx";
   static u8 u8AntMessage[]={0xff,0x00,0x01,0x03,0xff,0x00,0x00,0x00};
   static u8 u8AntMessage_counter=0;
-  
- 
- 
+
+  static u8 u8ReUserInput[8];
+  static u8 u8Count=0;
   
   if( AntReadAppMessageBuffer() )
   {
@@ -585,17 +483,13 @@ static void UserApp1SM_Idle(void)
         au8DataContent[2 * i]     = HexToASCIICharUpper(G_au8AntApiCurrentMessageBytes[i] / 16);
         au8DataContent[2 * i + 1] = HexToASCIICharUpper(G_au8AntApiCurrentMessageBytes[i] % 16);
         u8UserInput[i]=G_au8AntApiCurrentMessageBytes[i];
+        bReceiveFlag =TRUE;
       }
-      UserApp1_StateMachine = font_character;
+    
       
-#ifdef EIE1
      LCDMessage(LINE2_START_ADDR, au8DataContent);
-     
-      
-#endif /* EIE1 */
-      
-#ifdef MPG2
-#endif /* MPG2 */
+     UserApp1_StateMachine = font_character;
+
       
     }
     else if(G_eAntApiCurrentMessageClass == ANT_TICK)
@@ -611,23 +505,53 @@ static void UserApp1SM_Idle(void)
         }
       }
       AntQueueBroadcastMessage(ANT_CHANNEL_USERAPP, au8TestMessage);
-    }
-  } /* end AntReadData() */
-/*
-   for(u8 u8i=0;u8i<8;u8i++)
-  {
-    if(G_au8AntApiCurrentMessageBytes[u8i] == u8AntMessage[u8i])
-    {
-      u8AntMessage_counter++;
-      if(u8AntMessage_counter == 8)
+  /*    
+      u8Count++;
+      if(u8Count == 500)
       {
-        u8AntMessage_counter=0;
+         for(u8 u8i=0;u8i<8;u8i++)
+        {
+           u8UserInput[u8i] = u8ReUserInput[u8i];
+        }
         UserApp1_StateMachine = font_character;
       }
-
+     
+      */
+/*******
+      for(u8 u8i=0;u8i<8;u8i++)
+      {
+        if(G_au8AntApiCurrentMessageBytes[u8i] == u8AntMessage[u8i])
+        {
+          u8AntMessage_counter++;
+          if(u8AntMessage_counter == 8)
+          {
+            u8AntMessage_counter=0;
+            UserApp1_StateMachine = font_character;
+          }
+        }
+      }
+******/
     }
-  }
-*/
+    /* 
+    if(bReceiveFlag)
+    {
+      for(u8 u8i=0;u8i<8;u8i++)
+      {
+         u8ReUserInput[u8i] = u8UserInput[u8i];
+      }
+        UserApp1_StateMachine = font_character;
+    }
+    else
+    {
+      for(u8 u8i=0;u8i<8;u8i++)
+      {
+         u8UserInput[u8i] = u8ReUserInput[u8i];
+      }
+      UserApp1_StateMachine = font_character;
+    }
+    */
+  } /* end AntReadData() */
+  
 } /* end UserApp1SM_Idle() */
 
 
